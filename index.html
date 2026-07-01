@@ -279,9 +279,19 @@ form input, form select{
   padding:9px 10px;
   border-radius:6px;
   width:100%;
+  min-width:0;
   min-height:38px;
 }
 form input:focus, form select:focus{outline:1px solid var(--blue);border-color:var(--blue);}
+/* iOS Safari gives date inputs an intrinsic width that overflows the grid
+   cell unless the native appearance is stripped. */
+form input[type="date"]{
+  -webkit-appearance:none;
+  appearance:none;
+}
+form input[type="date"]::-webkit-date-and-time-value{
+  text-align:left;
+}
 .freq-wrap{display:flex;gap:8px;}
 .freq-wrap input{flex:0 0 64px;width:64px;}
 .freq-wrap select{flex:1;min-width:0;}
