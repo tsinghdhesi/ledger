@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F1419">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ledger">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<title>Ledger</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root{
+  --bg:#0F1419;
+  --surface:#161C25;
+  --surface-2:#1C2430;
+  --border:#2A323F;
+  --ink:#ECE9E2;
+  --muted:#8A94A6;
+  --green:#6FCF97;
+  --red:#E0785B;
+  --amber:#E0A458;
+  --blue:#7FB3D5;
+  --purple:#C68FE6;
+  --font-display:'Space Grotesk', sans-serif;
+  --font-body:'Inter', sans-serif;
+  --font-mono:'JetBrains Mono', monospace;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--font-body);
+  min-height:100vh;
+}
+#app{
+  max-width:920px;
+  margin:0 auto;
+  padding:40px 24px 80px;
+}
+.eyebrow{
+  font-family:var(--font-mono);
+  font-size:11px;
+  letter-spacing:0.18em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin:0 0 4px;
+}
+h1{
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:28px;
+  margin:0 0 28px;
+  letter-spacing:-0.01em;
+}
+.month-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  margin-bottom:24px;
+  flex-wrap:wrap;
+}
+.month-nav{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.month-nav button{
+  background:var(--surface-2);
+  border:1px solid var(--border);
+  color:var(--ink);
+  width:32px;height:32px;
+  border-radius:6px;
+  cursor:pointer;
+  font-size:14px;
+  font-family:var(--font-mono);
+}
+.month-nav button:hover{border-color:var(--muted);}
+.month-label{
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:16px;
+  min-width:140px;
+  text-align:center;
+}
+.income-field{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-family:var(--font-mono);
+  font-size:13px;
+  color:var(--muted);
+}
+.income-field input{
+  background:var(--surface-2);
+  border:1px solid var(--border);
+  color:var(--ink);
+  font-family:var(--font-mono);
+  font-size:14px;
+  padding:6px 10px;
+  border-radius:6px;
+  width:120px;
+}
+.income-field button, .import-label{
+  background:var(--surface-2);
+  border:1px solid var(--border);
+  color:var(--muted);
+  width:30px;height:30px;
+  border-radius:6px;
+  cursor:pointer;
+  font-family:var(--font-mono);
+  font-size:14px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+.income-field button:hover, .import-label:hover{color:var(--ink);border-color:var(--muted);}
+.hero{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:28px 28px 24px;
+  margin-bottom:20px;
+}
+.hero-label{
+  font-family:var(--font-mono);
+  font-size:11px;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:6px;
+}
+.hero-amount{
+  font-family:var(--font-display);
+  font-size:48px;
+  font-weight:700;
+  line-height:1.05;
+  margin-bottom:14px;
+}
+.hero-amount.pos{color:var(--green);}
+.hero-amount.neg{color:var(--red);}
+.equation{
+  font-family:var(--font-mono);
+  font-size:13px;
+  color:var(--muted);
+  border-top:1px solid var(--border);
+  padding-top:14px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  align-items:baseline;
+}
+.equation .num{color:var(--ink);}
+.equation .op{color:var(--muted);}
+
+.bars-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:24px 28px;
+  margin-bottom:20px;
+}
+.bars-title{
+  font-family:var(--font-mono);
+  font-size:11px;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:14px;
+}
+.stack{
+  display:flex;
+  height:14px;
+  border-radius:7px;
+  overflow:hidden;
+  background:var(--surface-2);
+  margin-bottom:18px;
+}
+.stack div{height:100%;}
+.cat-list{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px 24px;
+}
+.cat-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  font-size:14px;
+  padding:6px 0;
+  border-bottom:1px solid var(--border);
+}
+.cat-name{display:flex;align-items:center;gap:8px;}
+.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.cat-amt{font-family:var(--font-mono);font-size:14px;color:var(--ink);}
+.cat-pct{font-family:var(--font-mono);font-size:12px;color:var(--muted);margin-left:8px;}
+
+.form-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:20px 24px;
+  margin-bottom:20px;
+}
+.form-title{
+  font-family:var(--font-mono);
+  font-size:11px;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:14px;
+}
+form{
+  display:grid;
+  grid-template-columns:120px 110px 140px 1fr 1fr auto;
+  gap:10px;
+}
+form input, form select{
+  background:var(--surface-2);
+  border:1px solid var(--border);
+  color:var(--ink);
+  font-family:var(--font-body);
+  font-size:13px;
+  padding:9px 10px;
+  border-radius:6px;
+  width:100%;
+}
+form input:focus, form select:focus{outline:1px solid var(--blue);border-color:var(--blue);}
+form button{
+  background:var(--green);
+  color:#0F1419;
+  border:none;
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:13px;
+  border-radius:6px;
+  cursor:pointer;
+  padding:9px 16px;
+}
+form button:hover{opacity:0.9;}
+
+.table-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:20px 24px;
+  margin-bottom:20px;
+}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{
+  text-align:left;
+  font-family:var(--font-mono);
+  font-size:10px;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  color:var(--muted);
+  padding:6px 8px;
+  border-bottom:1px solid var(--border);
+}
+td{padding:9px 8px;border-bottom:1px solid var(--border);}
+td.amt{font-family:var(--font-mono);text-align:right;}
+td.del{text-align:right;}
+td.del button{
+  background:none;border:none;color:var(--muted);
+  cursor:pointer;font-size:15px;
+}
+td.del button:hover{color:var(--red);}
+.empty{
+  color:var(--muted);
+  font-size:13px;
+  text-align:center;
+  padding:24px 0;
+}
+.account-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:20px 24px;
+}
+.account-row{
+  display:flex;
+  justify-content:space-between;
+  font-size:13px;
+  padding:7px 0;
+  border-bottom:1px solid var(--border);
+}
+.account-row span:first-child{color:var(--muted);}
+.account-row span:last-child{font-family:var(--font-mono);}
+@media (max-width:640px){
+  form{grid-template-columns:1fr 1fr;}
+  .cat-list{grid-template-columns:1fr;}
+  .hero-amount{font-size:36px;}
+}
+@media (prefers-reduced-motion: reduce){
+  *{transition:none !important;}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+const CATEGORIES = [
+  {id:'bills', label:'Bills', color:'var(--amber)'},
+  {id:'subscriptions', label:'Subscriptions', color:'var(--blue)'},
+  {id:'essentials', label:'Essentials', color:'var(--green)'},
+  {id:'discretionary', label:'Discretionary', color:'var(--purple)'}
+];
+const CAT_COLOR = {bills:'#E0A458', subscriptions:'#7FB3D5', essentials:'#6FCF97', discretionary:'#C68FE6'};
+
+function fmt(n){
+  const sign = n < 0 ? '-' : '';
+  return sign + '$' + Math.abs(n).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function monthLabel(key){
+  const [y,m] = key.split('-').map(Number);
+  return new Date(y, m-1, 1).toLocaleString('en-US', {month:'long', year:'numeric'});
+}
+function shiftMonth(key, delta){
+  const [y,m] = key.split('-').map(Number);
+  const d = new Date(y, m-1+delta, 1);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+}
+function todayMonthKey(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+}
+
+let state = {
+  month: todayMonthKey(),
+  income: 0,
+  transactions: [] // {id, date, amount, category, account, note}
+};
+let loading = true;
+
+async function loadMonth(monthKey){
+  loading = true;
+  render();
+  try{
+    const raw = localStorage.getItem('budget:' + monthKey);
+    const val = raw ? JSON.parse(raw) : {income:0, transactions:[]};
+    state.month = monthKey;
+    state.income = val.income || 0;
+    state.transactions = val.transactions || [];
+  }catch(e){
+    state.month = monthKey;
+    state.income = 0;
+    state.transactions = [];
+  }
+  loading = false;
+  render();
+}
+
+async function saveMonth(){
+  try{
+    localStorage.setItem('budget:' + state.month, JSON.stringify({
+      income: state.income,
+      transactions: state.transactions
+    }));
+  }catch(e){
+    console.error('Save failed', e);
+    alert('Could not save — your browser storage may be full or blocked (private/incognito mode disables this).');
+  }
+}
+
+function addTransaction(e){
+  e.preventDefault();
+  const f = e.target;
+  const date = f.date.value || new Date().toISOString().slice(0,10);
+  const amount = parseFloat(f.amount.value);
+  const category = f.category.value;
+  const account = f.account.value.trim() || 'Unspecified';
+  const note = f.note.value.trim();
+  if(!amount || amount <= 0) return;
+  state.transactions.push({
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    date, amount, category, account, note
+  });
+  saveMonth();
+  f.reset();
+  render();
+}
+
+function deleteTransaction(id){
+  state.transactions = state.transactions.filter(t => t.id !== id);
+  saveMonth();
+  render();
+}
+
+function setIncome(val){
+  const n = parseFloat(val);
+  state.income = isNaN(n) ? 0 : n;
+  saveMonth();
+  render();
+}
+
+function changeMonth(delta){
+  loadMonth(shiftMonth(state.month, delta));
+}
+
+function render(){
+  const app = document.getElementById('app');
+
+  const totals = {bills:0, subscriptions:0, essentials:0, discretionary:0};
+  const byAccount = {};
+  state.transactions.forEach(t => {
+    totals[t.category] = (totals[t.category]||0) + t.amount;
+    byAccount[t.account] = (byAccount[t.account]||0) + t.amount;
+  });
+  const totalSpent = Object.values(totals).reduce((a,b)=>a+b, 0);
+  const leftover = state.income - totalSpent;
+
+  const stackHtml = CATEGORIES.map(c => {
+    const pct = totalSpent > 0 ? (totals[c.id]/totalSpent*100) : 0;
+    return `<div style="width:${pct}%;background:${CAT_COLOR[c.id]}"></div>`;
+  }).join('');
+
+  const catListHtml = CATEGORIES.map(c => {
+    const amt = totals[c.id] || 0;
+    const pct = state.income > 0 ? (amt/state.income*100).toFixed(1) : '0.0';
+    return `<div class="cat-row">
+      <span class="cat-name"><span class="dot" style="background:${CAT_COLOR[c.id]}"></span>${c.label}</span>
+      <span><span class="cat-amt">${fmt(amt)}</span><span class="cat-pct">${pct}% of income</span></span>
+    </div>`;
+  }).join('');
+
+  const sortedTx = [...state.transactions].sort((a,b) => b.date.localeCompare(a.date));
+  const txRows = sortedTx.length ? sortedTx.map(t => {
+    const cat = CATEGORIES.find(c => c.id === t.category);
+    return `<tr>
+      <td>${t.date}</td>
+      <td><span class="dot" style="background:${CAT_COLOR[t.category]};display:inline-block;margin-right:6px;"></span>${cat ? cat.label : t.category}</td>
+      <td>${t.account}</td>
+      <td>${t.note || ''}</td>
+      <td class="amt">${fmt(t.amount)}</td>
+      <td class="del"><button data-del="${t.id}">&times;</button></td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="6" class="empty">No transactions logged for this month yet.</td></tr>`;
+
+  const accountRows = Object.keys(byAccount).length ? Object.entries(byAccount)
+    .sort((a,b) => b[1]-a[1])
+    .map(([acc, amt]) => `<div class="account-row"><span>${acc}</span><span>${fmt(amt)}</span></div>`)
+    .join('') : `<div class="empty">No spending logged yet.</div>`;
+
+  app.innerHTML = `
+    <p class="eyebrow">Monthly Spending</p>
+    <h1>Ledger</h1>
+
+    <div class="month-row">
+      <div class="month-nav">
+        <button id="prevMonth">&larr;</button>
+        <span class="month-label">${monthLabel(state.month)}</span>
+        <button id="nextMonth">&rarr;</button>
+      </div>
+      <div class="income-field">
+        MONTHLY INCOME
+        <input type="number" id="incomeInput" step="0.01" value="${state.income || ''}" placeholder="0.00">
+        <button id="exportBtn" title="Download backup">&darr;</button>
+        <label class="import-label" title="Restore backup">&uarr;<input type="file" id="importInput" accept="application/json" style="display:none"></label>
+      </div>
+    </div>
+
+    <div class="hero">
+      <div class="hero-label">Left over this month</div>
+      <div class="hero-amount ${leftover >= 0 ? 'pos' : 'neg'}">${fmt(leftover)}</div>
+      <div class="equation">
+        <span class="num">${fmt(state.income)}</span>
+        <span class="op">income &minus;</span>
+        <span class="num">${fmt(totalSpent)}</span>
+        <span class="op">spent =</span>
+        <span class="num">${fmt(leftover)}</span>
+        <span class="op">disposable</span>
+      </div>
+    </div>
+
+    <div class="bars-card">
+      <div class="bars-title">Spending Breakdown</div>
+      <div class="stack">${totalSpent > 0 ? stackHtml : '<div style="width:100%;background:var(--surface-2)"></div>'}</div>
+      <div class="cat-list">${catListHtml}</div>
+    </div>
+
+    <div class="form-card">
+      <div class="form-title">Log a Transaction</div>
+      <form id="txForm">
+        <input type="date" name="date" value="${new Date().toISOString().slice(0,10)}">
+        <input type="number" name="amount" step="0.01" placeholder="Amount" required>
+        <select name="category">
+          ${CATEGORIES.map(c => `<option value="${c.id}">${c.label}</option>`).join('')}
+        </select>
+        <input type="text" name="account" placeholder="Card / account (e.g. Chase Sapphire)">
+        <input type="text" name="note" placeholder="Note (optional)">
+        <button type="submit">Add</button>
+      </form>
+    </div>
+
+    <div class="table-card">
+      <div class="bars-title">Transactions</div>
+      <table>
+        <thead><tr><th>Date</th><th>Category</th><th>Account</th><th>Note</th><th style="text-align:right">Amount</th><th></th></tr></thead>
+        <tbody>${txRows}</tbody>
+      </table>
+    </div>
+
+    <div class="account-card">
+      <div class="bars-title">By Card / Account</div>
+      ${accountRows}
+    </div>
+  `;
+
+  document.getElementById('prevMonth').onclick = () => changeMonth(-1);
+  document.getElementById('nextMonth').onclick = () => changeMonth(1);
+  document.getElementById('incomeInput').onchange = (e) => setIncome(e.target.value);
+  document.getElementById('txForm').onsubmit = addTransaction;
+  document.getElementById('exportBtn').onclick = exportAllData;
+  document.getElementById('importInput').onchange = (e) => {
+    if (e.target.files[0]) importAllData(e.target.files[0]);
+  };
+  app.querySelectorAll('[data-del]').forEach(btn => {
+    btn.onclick = () => deleteTransaction(btn.getAttribute('data-del'));
+  });
+}
+
+loadMonth(state.month);
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+
+function exportAllData(){
+  const all = {};
+  for (let i = 0; i < localStorage.length; i++){
+    const key = localStorage.key(i);
+    if (key.startsWith('budget:')) all[key] = JSON.parse(localStorage.getItem(key));
+  }
+  const blob = new Blob([JSON.stringify(all, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'ledger-backup-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importAllData(file){
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try{
+      const all = JSON.parse(e.target.result);
+      Object.entries(all).forEach(([key, val]) => {
+        if (key.startsWith('budget:')) localStorage.setItem(key, JSON.stringify(val));
+      });
+      loadMonth(state.month);
+      alert('Backup restored.');
+    }catch(err){
+      alert('Could not read that file — make sure it\'s a Ledger backup JSON.');
+    }
+  };
+  reader.readAsText(file);
+}
+</script>
+</body>
+</html>
