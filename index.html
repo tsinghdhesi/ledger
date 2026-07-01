@@ -362,8 +362,8 @@ form button.ghost:hover{color:var(--ink);border-color:var(--muted);opacity:1;}
 .tx-head .r{text-align:right;}
 .tx-date{font-family:var(--font-mono);font-size:12px;color:var(--muted);padding-top:2px;}
 .tx-cat{display:flex;align-items:center;gap:7px;font-size:13px;min-width:0;}
-.tx-acct{font-size:13px;overflow-wrap:anywhere;min-width:0;}
-.tx-note{font-size:13px;color:var(--muted);overflow-wrap:anywhere;min-width:0;}
+.tx-note{font-size:13px;overflow-wrap:anywhere;min-width:0;}
+.tx-acct{font-size:13px;color:var(--muted);overflow-wrap:anywhere;min-width:0;}
 .tx-amt{font-family:var(--font-mono);font-size:13px;text-align:right;min-width:0;overflow-wrap:anywhere;}
 .tx-freq{display:block;font-size:10px;color:var(--muted);margin-top:1px;}
 .tx-actions{display:flex;justify-content:flex-end;gap:2px;}
@@ -429,21 +429,22 @@ form button.ghost:hover{color:var(--ink);border-color:var(--muted);opacity:1;}
   .tx-row{
     grid-template-columns:auto minmax(0,1fr) auto;
     grid-template-areas:
+      "note note amt"
       "acct acct amt"
-      "cat  date actions"
-      "note note note";
+      "cat  date actions";
     gap:3px 10px;
     align-items:center;
     padding:12px 0;
   }
-  .tx-acct{grid-area:acct;font-weight:600;font-size:14px;}
+  .tx-note{grid-area:note;font-weight:600;font-size:14px;color:var(--ink);}
+  .tx-note:empty{display:none;}
+  .tx-acct{grid-area:acct;font-size:12px;}
+  .tx-acct:empty{display:none;}
   .tx-amt{grid-area:amt;font-size:14px;align-self:start;}
   .tx-cat{grid-area:cat;font-size:12px;color:var(--muted);}
   .tx-date{grid-area:date;font-size:11px;padding-top:0;}
   .tx-actions{grid-area:actions;}
   .tx-actions button{font-size:17px;padding:6px 10px;}
-  .tx-note{grid-area:note;font-size:12px;}
-  .tx-note:empty{display:none;}
 }
 @media (prefers-reduced-motion: reduce){
   *{transition:none !important;}
@@ -555,7 +556,7 @@ function submitTransaction(e){
   const note = f.note.value.trim();
   const freqUnit = FREQ_UNITS.some(u => u.id === f.freqUnit.value) ? f.freqUnit.value : 'once';
   const freqN = freqUnit === 'once' ? 1 : Math.max(1, Math.round(parseFloat(f.freqN.value) || 1));
-  if(!amount || amount <= 0) return;
+  if(!amount || amount <= 0 || !note) return;
   if(state.editingId){
     const t = state.transactions.find(t => t.id === state.editingId);
     if(t) Object.assign(t, {date, amount, category, account, note, freqUnit, freqN});
@@ -677,11 +678,15 @@ function render(){
   const txRows = sortedTx.length ? sortedTx.map(t => {
     const cat = CATEGORIES.find(c => c.id === t.category);
     const fl = freqLabel(t);
+    // Legacy entries logged before notes were required may have no note:
+    // show the account as the headline and skip the account sub-line.
+    const noteText = t.note || t.account;
+    const acctText = t.note ? t.account : '';
     return `<div class="tx-row">
       <span class="tx-date">${esc(t.date)}</span>
       <span class="tx-cat"><span class="dot" style="background:${CAT_COLOR[t.category] || 'var(--muted)'}"></span>${cat ? cat.label : esc(t.category)}</span>
-      <span class="tx-acct">${esc(t.account)}</span>
-      <span class="tx-note">${esc(t.note || '')}</span>
+      <span class="tx-note">${esc(noteText)}</span>
+      <span class="tx-acct">${esc(acctText)}</span>
       <span class="tx-amt">${fmt(t.amount)}${fl ? `<span class="tx-freq">${esc(fl)}</span>` : ''}</span>
       <span class="tx-actions">
         <button data-edit="${t.id}" title="Edit" aria-label="Edit transaction">&#9998;</button>
@@ -789,7 +794,7 @@ function render(){
         </div>
         <div class="field span2">
           <label>Note</label>
-          <input type="text" name="note" placeholder="Optional" value="${esc(fv.note)}">
+          <input type="text" name="note" placeholder="What was it? e.g. Rent" required value="${esc(fv.note)}">
         </div>
         <div class="form-actions">
           ${et ? '<button type="button" class="ghost" id="cancelEditBtn">Cancel</button>' : ''}
@@ -800,7 +805,7 @@ function render(){
 
     <div class="table-card">
       <div class="bars-title">Transactions</div>
-      <div class="tx-head"><span>Date</span><span>Category</span><span>Account</span><span>Note</span><span class="r">Amount</span><span></span></div>
+      <div class="tx-head"><span>Date</span><span>Category</span><span>Note</span><span>Account</span><span class="r">Amount</span><span></span></div>
       ${txRows}
     </div>
 
@@ -841,17 +846,88 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-function exportAllData(){
+// Tiny IndexedDB key-value store, only used to remember the backup file handle
+// (file handles can't go in localStorage).
+function idb(){
+  return new Promise((res, rej) => {
+    const r = indexedDB.open('ledger-meta', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('kv');
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+async function idbGet(key){
+  try{
+    const db = await idb();
+    return await new Promise((res) => {
+      const t = db.transaction('kv').objectStore('kv').get(key);
+      t.onsuccess = () => res(t.result);
+      t.onerror = () => res(undefined);
+    });
+  }catch(e){ return undefined; }
+}
+async function idbSet(key, val){
+  try{
+    const db = await idb();
+    await new Promise((res) => {
+      const t = db.transaction('kv', 'readwrite');
+      t.objectStore('kv').put(val, key);
+      t.oncomplete = res;
+      t.onerror = res;
+    });
+  }catch(e){}
+}
+
+function flashExportBtn(){
+  const btn = document.getElementById('exportBtn');
+  if(!btn) return;
+  btn.innerHTML = '&check;';
+  setTimeout(() => { btn.innerHTML = '&darr;'; }, 1200);
+}
+
+async function exportAllData(){
   const all = {};
   for (let i = 0; i < localStorage.length; i++){
     const key = localStorage.key(i);
     if (key.startsWith('budget:')) all[key] = JSON.parse(localStorage.getItem(key));
   }
-  const blob = new Blob([JSON.stringify(all, null, 2)], {type:'application/json'});
+  const json = JSON.stringify(all, null, 2);
+
+  // Where the browser allows it (desktop Chrome/Edge), write over the same
+  // ledger-backup.json every time instead of piling up copies. After the first
+  // save the remembered handle makes it a silent one-tap overwrite.
+  if (window.showSaveFilePicker){
+    try{
+      let handle = await idbGet('backupHandle');
+      if (handle && await handle.queryPermission({mode:'readwrite'}) !== 'granted'
+                 && await handle.requestPermission({mode:'readwrite'}) !== 'granted'){
+        handle = null;
+      }
+      if (!handle){
+        handle = await window.showSaveFilePicker({
+          suggestedName: 'ledger-backup.json',
+          types: [{description:'Ledger backup (JSON)', accept:{'application/json':['.json']}}]
+        });
+        await idbSet('backupHandle', handle);
+      }
+      const w = await handle.createWritable();
+      await w.write(json);
+      await w.close();
+      flashExportBtn();
+      return;
+    }catch(e){
+      if (e.name === 'AbortError') return; // user cancelled the save dialog
+      await idbSet('backupHandle', undefined); // stale handle — fall back this time
+    }
+  }
+
+  // Fallback (iOS/Safari/Firefox): plain download under one fixed name, so
+  // backups collide by name instead of accumulating as dated files.
+  const blob = new Blob([json], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'ledger-backup-' + new Date().toISOString().slice(0,10) + '.json';
+  a.download = 'ledger-backup.json';
   a.click();
   URL.revokeObjectURL(url);
 }

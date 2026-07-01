@@ -36,6 +36,6 @@ Data is stored in **`localStorage`**, scoped to that exact URL, in that specific
 This means:
 - Data on your phone and data on your laptop are **separate** — they will not sync. Logging a purchase on your phone won't show up if you open the site on your laptop, and vice versa.
 - If you clear Safari/Chrome site data, or use a private/incognito window, your data disappears.
-- **Back up regularly** using the ↓ (download) button in the app — it exports a JSON file of everything. Use the ↑ (upload) button to restore it, on the same device or a different one.
+- **Back up regularly** using the ↓ (download) button in the app — it saves everything as a single `ledger-backup.json`. On desktop Chrome/Edge it overwrites that same file each time (you pick where once, then it's a silent one-click save); on iPhone/Safari it downloads under that fixed name — if a copy piles up in Downloads, it's safe to delete older ones, only the newest matters. Use the ↑ (upload) button to restore it, on the same device or a different one.
 
 If down the line you want actual cross-device sync, that requires a small free backend (e.g. Firebase or Supabase) — happy to build that version whenever you want it.
